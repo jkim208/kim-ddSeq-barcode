@@ -8,7 +8,7 @@ from collections import Counter
 linker1s = []
 linker2s = []
 for record in SeqIO.parse("example.fastq", "fastq"):
-    seqString = "%s" % (record.seq)
+    seqString = "%s" % record.seq
     matchObj = re.match(r'.*([ACGT]{6})([ACGT]{15})([ACGT]{6})([ACGT]{15})([ACGT]{6})ACG([AGCT]{8})GACT', seqString)
     linker1s.append(matchObj.group(2))  # set of linker 1s
     linker2s.append(matchObj.group(4))  # set of linker 2s
@@ -18,7 +18,7 @@ linker2True = Counter(linker2s).most_common(1)[0][0]
 
 
 # read in all 96 possible cell barcode blocks in 'allBarcodeBlocks'
-with open('barcodeBlocks.txt') as barcodeBlocksFile:
+with open('barcodeBlocks.txt', 'r') as barcodeBlocksFile:
     allBarcodeBlocks = barcodeBlocksFile.read().splitlines()
 
 
@@ -47,6 +47,8 @@ def correct_bc_blocks(barcode_block):
 
 linker1s = []  # redefine linker lists for reuse
 linker2s = []
+fullBarcodes = []
+fullBarcodesFile = open('fullBarcodes.txt', 'w')  # store full barcodes in new file
 # Loop through all records and follow decoding algorithm
 # For linkers, allow only 1 edit distance
 for record in SeqIO.parse("example.fastq", "fastq"):
@@ -77,7 +79,19 @@ for record in SeqIO.parse("example.fastq", "fastq"):
         bc2 = correct_bc_blocks(matchObj.group(3))
         bc3 = correct_bc_blocks(matchObj.group(5))
         bcFull = bc1 + bc2 + bc3
+        fullBarcodes.append(bcFull)
         print('Full cell barcode is ' + bcFull + '\n')
+        fullBarcodesFile.write("%s\n" % bcFull)
 
     else:
         print("No match")
+
+fullBarcodesFile.close()
+
+i = 0
+for record in SeqIO.parse("example2.fastq", "fastq"):
+    seqString = "%s" % record.seq
+    print(record.seq + fullBarcodes[i])
+    i = i + 1
+    if i == len(fullBarcodes):
+        break
