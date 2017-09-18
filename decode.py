@@ -85,7 +85,9 @@ def demultiplex_barcodes(all_records, all_barcode_blocks, linker1_true, linker2_
             bc1 = correct_bc_blocks(all_barcode_blocks, match_obj.group(1))
             bc2 = correct_bc_blocks(all_barcode_blocks, match_obj.group(3))
             bc3 = correct_bc_blocks(all_barcode_blocks, match_obj.group(5))
-            bc_full_cell = bc1 + bc2 + bc3
+            umi = match_obj.group(6)
+            print('UMI is ' + umi)
+            bc_full_cell = bc1 + bc2 + bc3 + umi
             full_barcodes.append(bc_full_cell)
             print('Full cell barcode is ' + bc_full_cell + '\n')
             full_barcodes_file.write("%s\n" % bc_full_cell)
@@ -108,13 +110,12 @@ def main():
     # construct full cell barcodes from every sequence records. Supply the records in fastq format.
     all_records = "example.fastq"
     full_barcodes = demultiplex_barcodes(all_records, all_barcode_blocks, linker1_true, linker2_true)
-
-    i = 0
-    for record in SeqIO.parse("example2.fastq", "fastq"):
-        print(record.seq + full_barcodes[i])
-        i = i + 1
-        if i == len(full_barcodes):
-            break
+    # i = 0
+    # for record in SeqIO.parse("example2.fastq", "fastq"):
+    #     print(record.seq + full_barcodes[i])
+    #     i = i + 1
+    #     if i == len(full_barcodes):
+    #         break
 
 
 if __name__ == "__main__":
