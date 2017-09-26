@@ -25,12 +25,12 @@ def correct_bc_blocks(all_barcode_blocks, barcode_block):
     shd_index = min(hamming_dict, key=hamming_dict.get)
 
     if hamming_dict[shd_index] == 1:
-        print('Fix barcode to the one which is 1 ED apart')
+    #    print('Fix barcode to the one which is 1 ED apart')
         barcode_block = all_barcode_blocks[shd_index]
-    elif hamming_dict[shd_index] == 2:
-        print('Smallest ED is 2. Barcode will be not be changed.')
-    elif hamming_dict[shd_index] > 2:
-        print('Smallest ED is > 2.')
+    #elif hamming_dict[shd_index] == 2:
+    #    print('Smallest ED is 2. Barcode will be not be changed.')
+    #elif hamming_dict[shd_index] > 2:
+    #    print('Smallest ED is > 2.')
 
     # print('Adjusted barcode is:' + all_barcode_blocks[shd_index])
     return barcode_block
@@ -47,12 +47,14 @@ def demultiplex_barcodes(all_records, all_barcode_blocks):
     barcodedRead2File.write(originalSAM.readline())
     # declare variable to hold one full barcode in one scope higher than the loop
     # so that the barcode from read1 is 'saved' for appending to read2
-    bc_full_cell = ''
-
+    cell_bc = ''
+    umi = ''
+    match_obj1 = ''
     # loop through read1 records and apply decoding algorithm
     for count, line in enumerate(originalSAM, start=0):
         # every even line refers to read1. Decode read1 for barcodes. Do not write read1 to new SAM file
         if count % 2 == 0:
+            # match to where the sequence should be
             match_obj1 = regex.match(r".*\t([NACGT]*)\t.*\t.*", line)
             if match_obj1:
                 seq_string = match_obj1.group(1)
@@ -69,6 +71,7 @@ def demultiplex_barcodes(all_records, all_barcode_blocks):
                     # main unaccounted case is if insertions occur before/after barcode and before ACG
                     regex_search = r".*([ACGT]{6})" + str(linker1[0]) + r"([ACGT]{6})" \
                                    + str(linker2[0]) + r"([ACGT]{6})ACG([AGCT]{8}).?GACT"
+                    # match to find the barcodes
                     match_obj2 = regex.match(regex_search, seq_string)
 
                     if match_obj2:
@@ -76,28 +79,34 @@ def demultiplex_barcodes(all_records, all_barcode_blocks):
                         bc2 = correct_bc_blocks(all_barcode_blocks, match_obj2.group(2))
                         bc3 = correct_bc_blocks(all_barcode_blocks, match_obj2.group(3))
                         umi = match_obj2.group(4)
-                        bc_full_cell = bc1 + bc2 + bc3 + umi
+                        cell_bc = bc1 + bc2 + bc3
 
                     else:
-                        print("Regex match failed. Either sequence was mutated beyond acceptable measures"
-                              "or the wrong read was processed")
+                        #print("Regex match failed. Either sequence was mutated beyond acceptable measures"
+                              #"or the wrong read was processed")
+                        match_obj1 = ''
 
                 else:
-                    print("Linkers could not be found in good condition (ED > 1)")
+                    #print("Linkers could not be found in good condition (ED > 1)")
+                    match_obj1 = ''
 
             else:
-                print('Did not match to a SAM record')
+                #print('Did not match to a SAM record')
+                match_obj1 = ''
 
         # every odd line is read2. Read2 will have its sequence appended by the previous read1 barcode
-        if count % 2 == 1:
-            read2 = line.split('\t')
+        if count % 2 == 1 and match_obj1:
+                read2 = line.rstrip().split('\t')
 
-            # find where the sequence is in the list. Then, append the barcode
-            read2[9] = read2[9] + bc_full_cell
+                # find where the sequence is in the list. Then, append the barcode
+                read2[9] = read2[9] + cell_bc + umi
+                # also, add tags to the SAM/BAM file line to represent what the barcodes are
+                read2.append('XC:Z:' + cell_bc)
+                read2.append('XM:Z:' + umi)
 
-            # rejoin the split line for writing to the new Sam file
-            barcodedRead2 = '\t'.join(read2)
-            barcodedRead2File.write(barcodedRead2)
+                # rejoin the split line for writing to the new Sam file
+                barcodedRead2 = '\t'.join(read2)
+                barcodedRead2File.write(barcodedRead2 + '\n')
 
     originalSAM.close()
     barcodedRead2File.close()
@@ -115,7 +124,7 @@ def main():
     barcode_blocks_file = args.filename2
     all_barcode_blocks = get_all_barcode_blocks(barcode_blocks_file)
 
-    # construct full cell barcodes from every sequence records. Supply the records in SAM format
+    # construct full cell barcodes from every sequence record. Supply the records in SAM format
     sam_records_file = args.filename1
     demultiplex_barcodes(sam_records_file, all_barcode_blocks)
 
