@@ -3,7 +3,7 @@ import argparse  # command line options
 import regex  # regular expressions with edit distance functions
 import distance  # Find hamming distance
 
-# Function "get_all_barcode_blocks" reads from a file containing all possible barcode blocks.
+# Function 1 "get_all_barcode_blocks" reads from a file containing all possible barcode blocks.
 # Returns a list with these barcode blocks.
 def get_all_barcode_blocks(barcode_blocks_file):
     # read in all 96 possible cell barcode blocks in 'all_barcode_blocks'
@@ -11,7 +11,7 @@ def get_all_barcode_blocks(barcode_blocks_file):
         all_barcode_blocks = barcode_blocks_fh.read().splitlines()
         return all_barcode_blocks
 
-# Function "correct_bc_blocks" takes each barcode_block from a sequence, checks the hamming distances
+# Function 2 "correct_bc_blocks" takes each barcode_block from a sequence, checks the hamming distances
 # between the variable block and all 96 possible blocks, and makes corrections depending on the smallest
 # ED(edit distance) found. Barcode block is unchanged if smallest ED is 2.
 def correct_bc_blocks(all_barcode_blocks, barcode_block):
@@ -35,7 +35,7 @@ def correct_bc_blocks(all_barcode_blocks, barcode_block):
     # print('Adjusted barcode is:' + all_barcode_blocks[shd_index])
     return barcode_block
 
-# Function "demultiplex_barcodes" accounts for edit distance while extracting barcodes
+# Function 3 "demultiplex_barcodes" accounts for edit distance while extracting barcodes
 # Includes the correct_bc_blocks function in order to return full barcode
 def demultiplex_barcodes(all_records, all_barcode_blocks):
     originalSAM = open(all_records, 'r')
@@ -52,10 +52,14 @@ def demultiplex_barcodes(all_records, all_barcode_blocks):
     match_obj1 = ''
     # loop through read1 records and apply decoding algorithm
     for count, line in enumerate(originalSAM, start=0):
+
         # every even line refers to read1. Decode read1 for barcodes. Do not write read1 to new SAM file
         if count % 2 == 0:
+
             # match to where the sequence should be
             match_obj1 = regex.match(r".*\t([NACGT]*)\t.*\t.*", line)
+            read1 = line.rstrip().split('\t')
+
             if match_obj1:
                 seq_string = match_obj1.group(1)
 
@@ -79,7 +83,25 @@ def demultiplex_barcodes(all_records, all_barcode_blocks):
                         bc2 = correct_bc_blocks(all_barcode_blocks, match_obj2.group(2))
                         bc3 = correct_bc_blocks(all_barcode_blocks, match_obj2.group(3))
                         umi = match_obj2.group(4)
-                        cell_bc = bc1 + bc2 + bc3
+                        # for bc1, beginning is at index 0.
+                        # for bc2, beginning is after at least bc1 (6b) and linker1 (15b)
+                        # for bc3, beginning is after at least bc2 (12b) and linker2 (30b)
+                        # 68 is the length of the sequence. Hard code it for speed. Otherwise, remove.
+                        bc1_index = seq_string.find(bc1, 0, 20)
+                        bc2_index = seq_string.find(bc2, 20, 41)
+                        bc3_index = seq_string.find(bc3, 41, 68)
+                        # count number of low quality bases.
+                        low_quality_count = 0
+                        # break the loop and remove the read combo if count is > 2
+                        low_quality_count = check_bc_quality(read1[10], bc1_index, low_quality_count)
+                        low_quality_count = check_bc_quality(read1[10], bc2_index, low_quality_count)
+                        low_quality_count = check_bc_quality(read1[10], bc3_index, low_quality_count)
+
+                        if low_quality_count < 3:
+                            cell_bc = bc1 + bc2 + bc3
+
+                        else:
+                            match_obj1 = ''
 
                     else:
                         #print("Regex match failed. Either sequence was mutated beyond acceptable measures"
@@ -96,21 +118,40 @@ def demultiplex_barcodes(all_records, all_barcode_blocks):
 
         # every odd line is read2. Read2 will have its sequence appended by the previous read1 barcode
         if count % 2 == 1 and match_obj1:
-                read2 = line.rstrip().split('\t')
 
-                # find where the sequence is in the list. Then, append the barcode
-                read2[9] = read2[9] + cell_bc + umi
-                # also, add tags to the SAM/BAM file line to represent what the barcodes are
-                read2.append('XC:Z:' + cell_bc)
-                read2.append('XM:Z:' + umi)
+            read2 = line.rstrip().split('\t')
 
-                # rejoin the split line for writing to the new Sam file
-                barcodedRead2 = '\t'.join(read2)
-                barcodedRead2File.write(barcodedRead2 + '\n')
+            # look at where the sequence is in the list. Then, append the barcode
+            read2[9] = read2[9] + cell_bc + umi
+            # also, add tags to the SAM/BAM file line to represent what the barcodes are
+            read2.append('XC:Z:' + cell_bc)
+            read2.append('XM:Z:' + umi)
+
+            # rejoin the split line for writing to the new Sam file
+            barcodedRead2 = '\t'.join(read2)
+            barcodedRead2File.write(barcodedRead2 + '\n')
 
     originalSAM.close()
     barcodedRead2File.close()
     return
+
+# Function 4 'check_bc_quality' accepts a quality sequence string, a barcode index, and current low
+# quality count. Via the barcode index, the function checks if the corresponding quality string
+# indicates any low quality bases. If any are detected, loq_q_count is incremented by 1.
+# Function 4 is used in function 3 (demultiplexing) and returns the new low_q_count.
+def check_bc_quality(q_seq, bc_index, low_q_count):
+
+    for element in q_seq[bc_index:bc_index + 6]:
+        # Break out of loop immediately if low_q_count threshold has been passed
+        if low_q_count > 2:
+            break
+
+        # Check the ASCII code if the base quality is low (q-score 10 = ASCII score 43)
+        if ord(element) < 43:
+            low_q_count += 1
+
+    return low_q_count
+
 
 def main():
     # grab SAM filename/path from command line arguments
