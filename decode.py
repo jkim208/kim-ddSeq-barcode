@@ -2,7 +2,7 @@
 import argparse  # command line options
 import regex  # regular expressions with edit distance functions
 import distance  # Find hamming distance
-#import timeit
+# import timeit
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
     parser.add_argument('filename2', help='(file containing barcode blocks)')
     args = parser.parse_args()
 
-    #start = timeit.default_timer()
+    # start = timeit.default_timer()
     # obtain all possible barcode block combinations
     barcode_blocks_file = args.filename2
     ref_barcode_blocks = get_ref_barcode_blocks(barcode_blocks_file)
@@ -23,8 +23,9 @@ def main():
     sam_records_file = args.filename1
     read_and_write_sam(sam_records_file, ref_barcode_blocks)
 
-    #stop = timeit.default_timer()
-    #print stop - start
+    # stop = timeit.default_timer()
+    # print stop - start
+
 
 def get_ref_barcode_blocks(barcode_blocks_file):
     # Function 1 "get_ref_barcode_blocks" reads from a file containing all possible barcode blocks.
@@ -34,6 +35,7 @@ def get_ref_barcode_blocks(barcode_blocks_file):
     with open(barcode_blocks_file, 'r') as barcode_blocks_fh:
         ref_barcode_blocks = barcode_blocks_fh.read().splitlines()
         return ref_barcode_blocks
+
 
 def read_and_write_sam(all_records, ref_barcode_blocks):
     # Function 2 "read_and_write_sam" accounts for edit distance while extracting barcodes
@@ -114,24 +116,30 @@ def extract_barcode(line, ref_barcode_blocks):
 
                 if low_quality_count < 3:
                     cell_bc = bc1 + bc2 + bc3
+                    return match_obj1, cell_bc, umi
 
                 else:
-                    match_obj1 = ''
+                    pass
 
             else:
                 # print("Regex match failed. Either sequence was mutated beyond acceptable measures"
                 # "or the wrong read was processed")
-                match_obj1 = ''
+                pass
 
         else:
             # print("Linkers could not be found in good condition (ED > 1)")
-            match_obj1 = ''
+            pass
 
     else:
         # print('Did not match to a SAM record')
-        match_obj1 = ''
+        pass
+
+    umi = None
+    match_obj1 = None
+    cell_bc = None
 
     return match_obj1, cell_bc, umi
+
 
 def correct_bc_blocks(ref_barcode_blocks, barcode_block):
     # Function 4 "correct_bc_blocks" takes each barcode_block from a sequence, checks the hamming distances
