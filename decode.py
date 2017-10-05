@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import argparse  # command line options
 import regex  # regular expressions with edit distance functions
-import distance  # Find hamming distance
-# import timeit
-
+#import profile
+import pyximport
+pyximport.install(build_in_temp=False)
+from editDistance import edit_distance
 
 def main():
     # Main function: First function to be called
@@ -146,12 +147,14 @@ def correct_bc_blocks(ref_barcode_blocks, barcode_block):
     # between the variable block and all 96 possible blocks, and makes corrections depending on the smallest
     # ED(edit distance) found. Barcode block is unchanged if smallest ED is 2.
 
-    lowest_hamming = 3  # start at highest possible number
+    lowest_hamming = 3  # start at highest reasonable number
     lh_reference_block = ''
 
     # determine hamming distances between barcode block and all 96 possible blocks
     for reference_block in ref_barcode_blocks:
-        hamming_dist = (distance.hamming(barcode_block, reference_block))
+
+        hamming_dist = (edit_distance(barcode_block, reference_block))
+
         if hamming_dist < lowest_hamming:
             lowest_hamming = hamming_dist
             lh_reference_block = reference_block
@@ -169,6 +172,7 @@ def correct_bc_blocks(ref_barcode_blocks, barcode_block):
         #    print('Smallest ED is > 2.')
 
     # print('Adjusted barcode is:' + ref_barcode_blocks[shd_index])
+
     return barcode_block
 
 
@@ -207,4 +211,5 @@ def append_barcode(line, cell_bc, umi):
 
 
 if __name__ == "__main__":
+    #profile.run("main()")
     main()
