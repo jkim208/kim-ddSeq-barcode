@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse  # command line options
 import regex  # regular expressions with edit distance functions
 #import profile
-import pyximport
+import pyximport  # install Cython to access pyximport
 pyximport.install(build_in_temp=False)
 from editDistance import edit_distance
+
 
 def main():
     # Main function: First function to be called
@@ -26,6 +27,7 @@ def main():
 
     # stop = timeit.default_timer()
     # print stop - start
+    return
 
 
 def get_ref_barcode_blocks(barcode_blocks_file):
@@ -92,7 +94,7 @@ def extract_barcode(line, ref_barcode_blocks):
             # only keep reads where ACG and GACT anchors are not mutated
             # main unaccounted case is if insertions occur before/after barcode and before ACG
             regex_search = r"^.*([ACGT]{6})" + str(linker1[0]) + r"([ACGT]{6})" \
-                           + str(linker2[0]) + r"([ACGT]{6})ACG([AGCT]{8}).?GACT"
+                           + str(linker2[0]) + r"([ACGT]{6})ACG([AGCT]{8})GACT"
             # match to find the barcodes
             match_obj2 = regex.match(regex_search, match_obj1)
 
@@ -153,14 +155,15 @@ def correct_bc_blocks(ref_barcode_blocks, barcode_block):
     # determine hamming distances between barcode block and all 96 possible blocks
     for reference_block in ref_barcode_blocks:
 
-        hamming_dist = (edit_distance(barcode_block, reference_block))
+        # convert string to bytes for better Cython integration. Required in Python 3
+        hamming_dist = (edit_distance(barcode_block.encode('utf-8'), reference_block.encode('utf-8')))
 
         if hamming_dist < lowest_hamming:
-            lowest_hamming = hamming_dist
-            lh_reference_block = reference_block
-            if lowest_hamming == 0:
+            if hamming_dist == 0:
                 # if the given barcode block has 0 ED against a reference, we can end the loop early
                 break
+            lowest_hamming = hamming_dist
+            lh_reference_block = reference_block
 
     # find the blocks with the smallest hamming distances
     if lowest_hamming == 1:
@@ -196,18 +199,9 @@ def check_bc_quality(q_seq, bc_index, low_q_count):
 
 def append_barcode(line, cell_bc, umi):
     # Function 6 "append_barcode" takes the barcode and adds it to the record as a separate tag
+    line = "%s\t%s\t%s" % (line.rstrip(), 'XC:Z:' + cell_bc, 'XM:Z:' + umi)
 
-    read2 = line.rstrip().split('\t')
-
-    # look at where the sequence is in the list. Then, append the barcode
-    read2[9] = read2[9] + cell_bc + umi
-    # also, add tags to the SAM/BAM file line to represent what the barcodes are
-    read2.append('XC:Z:' + cell_bc)
-    read2.append('XM:Z:' + umi)
-
-    # rejoin the split line for writing to the new Sam file
-    barcodedRead2 = '\t'.join(read2)
-    return barcodedRead2
+    return line
 
 
 if __name__ == "__main__":
