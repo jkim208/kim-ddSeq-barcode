@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="47407986-4304-4db8-9606-b4388f2627ed" name="Default" comment="">
-      <change type="MOVED" beforePath="$PROJECT_DIR$/decode.py" afterPath="$PROJECT_DIR$/parseBarcodes.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/parseBarcodes.py" afterPath="$PROJECT_DIR$/parseBarcodes.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samWriteBackup" afterPath="$PROJECT_DIR$/samWriteBackup" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -14,11 +15,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="parseBarcodes.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="parseBarcodes.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/parseBarcodes.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="216">
-              <caret line="12" column="0" lean-forward="true" selection-start-line="12" selection-start-column="0" selection-end-line="12" selection-end-column="0" />
+            <state relative-caret-position="144">
+              <caret line="50" column="77" lean-forward="true" selection-start-line="50" selection-start-column="77" selection-end-line="50" selection-end-column="77" />
               <folding>
                 <element signature="e#23#62#0" expanded="true" />
               </folding>
@@ -26,21 +27,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Start_Analysis.py" pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/Start_Analysis.py">
+      <file leaf-file-name="writeSamTest.sam" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/writeSamTest.sam">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="108">
-              <caret line="35" column="0" lean-forward="false" selection-start-line="35" selection-start-column="0" selection-end-line="36" selection-end-column="11" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Start_Analysis_Updated.py" pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/Start_Analysis_Updated.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2167">
-              <caret line="196" column="15" lean-forward="false" selection-start-line="196" selection-start-column="9" selection-end-line="196" selection-end-column="15" />
+            <state relative-caret-position="0">
+              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -57,36 +48,36 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>TAGCCATCGCATTGC</find>
-      <find>write</find>
-      <find>correct</find>
-      <find>demultiplex_barcodes</find>
-      <find>umi</find>
-      <find>all_barcode_blocks</find>
-      <find>readAndWriteSam</find>
-      <find>cell_bc</find>
-      <find>aa</find>
-      <find>/data/seed</find>
-      <find>params</find>
-      <find>read1</find>
-      <find>star_out_pr</find>
-      <find>unmapped_tagged_trimmed_filtered_fastq</find>
-      <find>test</find>
-      <find>tmp</find>
-      <find>star_exec</find>
-      <find>star_genome_dir</find>
-      <find>star_genome</find>
-      <find>star_out_pre</find>
-      <find>edit</find>
-      <find>genome_fa</find>
+      <find>{unmapped_tagged_filtered_bam}</find>
+      <find>{unmapped_tagged_filtered_trimmed_smart}</find>
+      <find>{unmapped_tagged_filtered_trimmed_smart_polya}</find>
+      <find>{unmapped_bam}</find>
       <find>unmapped_bam</find>
-      <find>drop_seq_tools</find>
-      <find>ds_dir</find>
-      <find>genome_ann</find>
-      <find>final_bar</find>
-      <find>num_final_barcodes</find>
-      <find>unmapped_tagged_filtered_trimmed_smart_polya</find>
-      <find>cd_hit</find>
+      <find>tagged_cell_summary</find>
+      <find>tagged_molecular_summary</find>
+      <find>trimming_polya_summary</find>
+      <find>unmapped</find>
+      <find>unmapped_tagged_trimmed_filtered_fastq</find>
+      <find>unmapped_tagged_filtered_bam</find>
+      <find>unmapped_tagged_filtered_sam</find>
+      <find>star_out_prefix</find>
+      <find>unmapped_tagged_filtered_fastq</find>
+      <find>cd-hit</find>
+      <find>scripts_dir</find>
+      <find>sample_name</find>
+      <find>command</find>
+      <find>out_dir_base</find>
+      <find>x.out_base</find>
+      <find>out_base</find>
+      <find>lsf_dir</find>
+      <find>unmapped_tagged_cell_bam</find>
+      <find>lsf</find>
+      <find>num_barcodes_fix</find>
+      <find>indir</find>
+      <find>$2 = &quot;4&quot;</find>
+      <find>unmapped_sam</find>
+      <find>queryname</find>
+      <find>unmapped_tagged_filtered_fixed_sorted_bam</find>
     </findStrings>
     <replaceStrings>
       <replace>shd_index</replace>
@@ -96,6 +87,11 @@
       <replace>readAndWriteSam</replace>
       <replace>ref_barcode_blocks</replace>
       <replace>read_and_write_sam</replace>
+      <replace>unmapped_sam</replace>
+      <replace>CHANGEEEEEEE</replace>
+      <replace>unmapped_tagged_fastq</replace>
+      <replace>unmapped_tagged_filtered_fastq</replace>
+      <replace>unmapped_tagged_filtered_fixed_fastq</replace>
     </replaceStrings>
   </component>
   <component name="Git.Settings">
@@ -112,21 +108,23 @@
         <option value="$PROJECT_DIR$/example.fastq" />
         <option value="$PROJECT_DIR$/ddSeq2.sam" />
         <option value="$PROJECT_DIR$/ddSeq.sam" />
-        <option value="$PROJECT_DIR$/samWriteBackup" />
         <option value="$PROJECT_DIR$/setup.py" />
         <option value="$PROJECT_DIR$/decode.pyx" />
         <option value="$PROJECT_DIR$/barcodeBlocks.txt" />
         <option value="$PROJECT_DIR$/test.lsf" />
         <option value="$USER_HOME$/Start_Analysis.py" />
         <option value="$PROJECT_DIR$/editDistance.pyx" />
-        <option value="$PROJECT_DIR$/writeSamTest.sam" />
         <option value="$PROJECT_DIR$/decode.py" />
         <option value="$USER_HOME$/Start_Analysis_Updated.py" />
+        <option value="$USER_HOME$/jk_Start_Analysis.py" />
+        <option value="$PROJECT_DIR$/writeSamTest.sam" />
         <option value="$PROJECT_DIR$/parseBarcodes.py" />
+        <option value="$PROJECT_DIR$/samWriteBackup" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds">
+  <component name="ProjectFrameBounds" extendedState="4">
+    <option name="x" value="31" />
     <option name="y" value="24" />
     <option name="width" value="1366" />
     <option name="height" value="681" />
@@ -147,7 +145,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scratches" />
       <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
@@ -160,11 +157,12 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$USER_HOME$/jk_Start_Analysis.py" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -275,14 +273,14 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="/usr/bin/python3.5" />
+      <option name="SDK_HOME" value="/usr/bin/python2.7" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="decodeBarcode" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/parseBarcodes.py" />
-      <option name="PARAMETERS" value="ddSeq.sam barcodeBlocks.txt" />
+      <option name="PARAMETERS" value="-i ddSeq.sam -b barcodeBlocks.txt -o writeSamTest.sam" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
     </configuration>
@@ -322,14 +320,12 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="24" width="1366" height="681" extended-state="0" />
-    <editor active="true" />
+    <frame x="31" y="24" width="1366" height="681" extended-state="4" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.13909224" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.13909224" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32960895" sideWeight="0.5060514" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32869565" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2504348" sideWeight="0.49394855" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2504348" sideWeight="0.49394855" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -342,6 +338,7 @@
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32869565" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
@@ -363,6 +360,32 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/parseBarcodes.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#23#62#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Start_Analysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="594">
+          <caret line="35" column="0" lean-forward="false" selection-start-line="35" selection-start-column="0" selection-end-line="36" selection-end-column="11" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Start_Analysis_Updated.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3492">
+          <caret line="196" column="15" lean-forward="false" selection-start-line="196" selection-start-column="9" selection-end-line="196" selection-end-column="15" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$USER_HOME$/Start_Analysis.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -551,13 +574,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/test.lsf" />
-    <entry file="file://$PROJECT_DIR$/samWriteBackup">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="9" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/editDistance.pyx">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="108">
@@ -565,45 +581,62 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/writeSamTest.sam">
+    <entry file="file://$PROJECT_DIR$/writeSameTest.sam" />
+    <entry file="file://$USER_HOME$/Start_Analysis_Updated.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="108">
-          <caret line="6" column="33" lean-forward="false" selection-start-line="6" selection-start-column="33" selection-end-line="6" selection-end-column="33" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/writeSameTest.sam">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state relative-caret-position="373">
+          <caret line="62" column="15" lean-forward="true" selection-start-line="62" selection-start-column="15" selection-end-line="62" selection-end-column="15" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$USER_HOME$/Start_Analysis.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="108">
-          <caret line="35" column="0" lean-forward="false" selection-start-line="35" selection-start-column="0" selection-end-line="36" selection-end-column="11" />
+        <state relative-caret-position="-340">
+          <caret line="179" column="24" lean-forward="true" selection-start-line="179" selection-start-column="24" selection-end-line="179" selection-end-column="24" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/Start_Analysis_Updated.py">
+    <entry file="file://$PROJECT_DIR$/../test.lsf">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2167">
-          <caret line="196" column="15" lean-forward="false" selection-start-line="196" selection-start-column="9" selection-end-line="196" selection-end-column="15" />
+        <state relative-caret-position="-756">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/samWriteBackup">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="5" column="35" lean-forward="true" selection-start-line="5" selection-start-column="35" selection-end-line="5" selection-end-column="35" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/parseBarcodes.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="12" column="0" lean-forward="true" selection-start-line="12" selection-start-column="0" selection-end-line="12" selection-end-column="0" />
+        <state relative-caret-position="144">
+          <caret line="50" column="77" lean-forward="true" selection-start-line="50" selection-start-column="77" selection-end-line="50" selection-end-column="77" />
           <folding>
             <element signature="e#23#62#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/jk_Start_Analysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="58" column="0" lean-forward="true" selection-start-line="58" selection-start-column="0" selection-end-line="58" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/writeSamTest.sam">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>

@@ -4,7 +4,8 @@ import regex  # regular expressions with edit distance functions
 import pyximport  # install Cython to access pyximport
 pyximport.install(build_in_temp=False)
 from editDistance import edit_distance
-#import profile
+import sys
+import profile
 
 # parseBarcodes.py was written for the BioRad ddSeq procedure (scRNA).
 # This program applies a decoding algorithm recommended by Illumina to extract, parse and filter
@@ -48,7 +49,8 @@ def correct_bc_blocks(ref_barcode_blocks, barcode_block):
     for reference_block in ref_barcode_blocks:
 
         # convert string to bytes for better Cython integration. Required in Python 3
-        hamming_dist = (edit_distance(barcode_block.encode('utf-8'), reference_block.encode('utf-8')))
+        hamming_dist = (edit_distance(barcode_block, reference_block))
+        # hamming_dist = (edit_distance(barcode_block, reference_block)) For Python 2.7
 
         if hamming_dist < lowest_hamming:
             if hamming_dist == 0:
@@ -146,7 +148,12 @@ def read_and_write_sam(all_records, ref_barcode_blocks, output):
     # Function 2 "read_and_write_sam" accounts for edit distance while extracting barcodes
     # Includes the correct_bc_blocks function in order to return full barcode
 
-    originalSAM = open(all_records, 'r')
+    try:
+        originalSAM = open(all_records, 'r')
+    except IOError:
+        print("Could not open SAM file for reading. Ending program...")
+        sys.exit()
+
     barcodedRead2File = open(output, 'w')
 
     # write first two lines of sam file (header lines) to new file.
@@ -212,5 +219,5 @@ def main():
 
 
 if __name__ == "__main__":
-    #profile.run("main()")
-    main()
+    profile.run("main()")
+    #main()
