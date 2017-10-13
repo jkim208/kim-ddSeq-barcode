@@ -5,7 +5,7 @@ import pyximport  # install Cython to access pyximport
 pyximport.install(build_in_temp=False)
 from editDistance import edit_distance
 import sys
-import profile
+#import profile
 
 # parseBarcodes.py was written for the BioRad ddSeq procedure (scRNA).
 # This program applies a decoding algorithm recommended by Illumina to extract, parse and filter
@@ -48,9 +48,8 @@ def correct_bc_blocks(ref_barcode_blocks, barcode_block):
     # determine hamming distances between barcode block and all 96 possible blocks
     for reference_block in ref_barcode_blocks:
 
-        # convert string to bytes for better Cython integration. Required in Python 3
+        # use Cython to rapidly conduct calculation. .pyx script will perform type conversion
         hamming_dist = (edit_distance(barcode_block, reference_block))
-        # hamming_dist = (edit_distance(barcode_block, reference_block)) For Python 2.7
 
         if hamming_dist < lowest_hamming:
             if hamming_dist == 0:
@@ -205,7 +204,6 @@ def main():
     required_group.add_argument("-input", help='.sam input file', required=True, metavar='')
     required_group.add_argument("-output", help='.sam output file', required=True, metavar='')
     args = parser.parse_args()
-
     # start = timeit.default_timer()
     # obtain all possible barcode block combinations
     ref_barcode_blocks = get_ref_barcode_blocks(barcode_blocks_file=args.blocks)
@@ -219,5 +217,5 @@ def main():
 
 
 if __name__ == "__main__":
-    profile.run("main()")
-    #main()
+    #profile.run("main()")
+    main()

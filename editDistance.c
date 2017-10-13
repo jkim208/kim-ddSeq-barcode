@@ -784,8 +784,27 @@ static const char *__pyx_f[] = {
 #define __Pyx_CLEAR(r)    do { PyObject* tmp = ((PyObject*)(r)); r = NULL; __Pyx_DECREF(tmp);} while(0)
 #define __Pyx_XCLEAR(r)   do { if((r) != NULL) {PyObject* tmp = ((PyObject*)(r)); r = NULL; __Pyx_DECREF(tmp);}} while(0)
 
-/* IncludeStringH.proto */
-#include <string.h>
+/* GetItemInt.proto */
+#define __Pyx_GetItemInt(o, i, type, is_signed, to_py_func, is_list, wraparound, boundscheck)\
+    (__Pyx_fits_Py_ssize_t(i, type, is_signed) ?\
+    __Pyx_GetItemInt_Fast(o, (Py_ssize_t)i, is_list, wraparound, boundscheck) :\
+    (is_list ? (PyErr_SetString(PyExc_IndexError, "list index out of range"), (PyObject*)NULL) :\
+               __Pyx_GetItemInt_Generic(o, to_py_func(i))))
+#define __Pyx_GetItemInt_List(o, i, type, is_signed, to_py_func, is_list, wraparound, boundscheck)\
+    (__Pyx_fits_Py_ssize_t(i, type, is_signed) ?\
+    __Pyx_GetItemInt_List_Fast(o, (Py_ssize_t)i, wraparound, boundscheck) :\
+    (PyErr_SetString(PyExc_IndexError, "list index out of range"), (PyObject*)NULL))
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_List_Fast(PyObject *o, Py_ssize_t i,
+                                                              int wraparound, int boundscheck);
+#define __Pyx_GetItemInt_Tuple(o, i, type, is_signed, to_py_func, is_list, wraparound, boundscheck)\
+    (__Pyx_fits_Py_ssize_t(i, type, is_signed) ?\
+    __Pyx_GetItemInt_Tuple_Fast(o, (Py_ssize_t)i, wraparound, boundscheck) :\
+    (PyErr_SetString(PyExc_IndexError, "tuple index out of range"), (PyObject*)NULL))
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Tuple_Fast(PyObject *o, Py_ssize_t i,
+                                                              int wraparound, int boundscheck);
+static PyObject *__Pyx_GetItemInt_Generic(PyObject *o, PyObject* j);
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Fast(PyObject *o, Py_ssize_t i,
+                                                     int is_list, int wraparound, int boundscheck);
 
 /* PyThreadStateGet.proto */
 #if CYTHON_FAST_THREAD_STATE
@@ -929,44 +948,50 @@ static PyObject *__pyx_pf_12editDistance_edit_distance(CYTHON_UNUSED PyObject *_
  * # Read through length (l) of string and count mismatches (m)
  * 
  * cpdef int edit_distance(test, ref):             # <<<<<<<<<<<<<<
- *     cdef char * a = test
- *     cdef char * b = ref
+ *     cdef bytes a = <bytes>test
+ *     cdef bytes b = <bytes>ref
  */
 
 static PyObject *__pyx_pw_12editDistance_1edit_distance(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
 static int __pyx_f_12editDistance_edit_distance(PyObject *__pyx_v_test, PyObject *__pyx_v_ref, CYTHON_UNUSED int __pyx_skip_dispatch) {
-  char *__pyx_v_a;
-  char *__pyx_v_b;
+  PyObject *__pyx_v_a = 0;
+  PyObject *__pyx_v_b = 0;
   int __pyx_v_k;
   int __pyx_v_l;
   int __pyx_v_m;
   int __pyx_r;
   __Pyx_RefNannyDeclarations
-  char *__pyx_t_1;
-  size_t __pyx_t_2;
+  PyObject *__pyx_t_1 = NULL;
+  Py_ssize_t __pyx_t_2;
   int __pyx_t_3;
-  int __pyx_t_4;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  int __pyx_t_6;
   __Pyx_RefNannySetupContext("edit_distance", 0);
 
   /* "editDistance.pyx":7
  * 
  * cpdef int edit_distance(test, ref):
- *     cdef char * a = test             # <<<<<<<<<<<<<<
- *     cdef char * b = ref
+ *     cdef bytes a = <bytes>test             # <<<<<<<<<<<<<<
+ *     cdef bytes b = <bytes>ref
  *     cdef int k, l, m
  */
-  __pyx_t_1 = __Pyx_PyObject_AsWritableString(__pyx_v_test); if (unlikely((!__pyx_t_1) && PyErr_Occurred())) __PYX_ERR(0, 7, __pyx_L1_error)
-  __pyx_v_a = __pyx_t_1;
+  __pyx_t_1 = __pyx_v_test;
+  __Pyx_INCREF(__pyx_t_1);
+  __pyx_v_a = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
 
   /* "editDistance.pyx":8
  * cpdef int edit_distance(test, ref):
- *     cdef char * a = test
- *     cdef char * b = ref             # <<<<<<<<<<<<<<
+ *     cdef bytes a = <bytes>test
+ *     cdef bytes b = <bytes>ref             # <<<<<<<<<<<<<<
  *     cdef int k, l, m
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_AsWritableString(__pyx_v_ref); if (unlikely((!__pyx_t_1) && PyErr_Occurred())) __PYX_ERR(0, 8, __pyx_L1_error)
-  __pyx_v_b = __pyx_t_1;
+  __pyx_t_1 = __pyx_v_ref;
+  __Pyx_INCREF(__pyx_t_1);
+  __pyx_v_b = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
 
   /* "editDistance.pyx":11
  *     cdef int k, l, m
@@ -984,7 +1009,11 @@ static int __pyx_f_12editDistance_edit_distance(PyObject *__pyx_v_test, PyObject
  * 
  *     for k from 0 <= k < l:
  */
-  __pyx_t_2 = strlen(__pyx_v_a); 
+  if (unlikely(__pyx_v_a == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "object of type 'NoneType' has no len()");
+    __PYX_ERR(0, 12, __pyx_L1_error)
+  }
+  __pyx_t_2 = PyBytes_GET_SIZE(__pyx_v_a); if (unlikely(__pyx_t_2 == ((Py_ssize_t)-1))) __PYX_ERR(0, 12, __pyx_L1_error)
   __pyx_v_l = __pyx_t_2;
 
   /* "editDistance.pyx":14
@@ -1004,8 +1033,16 @@ static int __pyx_f_12editDistance_edit_distance(PyObject *__pyx_v_test, PyObject
  *             m += 1
  * 
  */
-    __pyx_t_4 = (((__pyx_v_a[__pyx_v_k]) != (__pyx_v_b[__pyx_v_k])) != 0);
-    if (__pyx_t_4) {
+    __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_a, __pyx_v_k, int, 1, __Pyx_PyInt_From_int, 0, 1, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_4 = __Pyx_GetItemInt(__pyx_v_b, __pyx_v_k, int, 1, __Pyx_PyInt_From_int, 0, 1, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 15, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_5 = PyObject_RichCompare(__pyx_t_1, __pyx_t_4, Py_NE); __Pyx_XGOTREF(__pyx_t_5); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 15, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_5); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(0, 15, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    if (__pyx_t_6) {
 
       /* "editDistance.pyx":16
  *     for k from 0 <= k < l:
@@ -1038,15 +1075,20 @@ static int __pyx_f_12editDistance_edit_distance(PyObject *__pyx_v_test, PyObject
  * # Read through length (l) of string and count mismatches (m)
  * 
  * cpdef int edit_distance(test, ref):             # <<<<<<<<<<<<<<
- *     cdef char * a = test
- *     cdef char * b = ref
+ *     cdef bytes a = <bytes>test
+ *     cdef bytes b = <bytes>ref
  */
 
   /* function exit code */
   __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
   __Pyx_WriteUnraisable("editDistance.edit_distance", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_a);
+  __Pyx_XDECREF(__pyx_v_b);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
@@ -1345,8 +1387,8 @@ static int __pyx_pymod_exec_editDistance(PyObject *__pyx_pyinit_module)
 
   /* "editDistance.pyx":1
  * # Cython module for edit_distance function             # <<<<<<<<<<<<<<
- * # Define types with c/cp-def
- * # Convert Python parameters to those of C (test -> a)
+ * # Define types with c/cp-def and convert Python parameters to those of C (test -> a)
+ * # To increase performance, convert Python string to C bytes. Some type conversion required for Python 3
  */
   __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
@@ -1394,6 +1436,93 @@ end:
     return (__Pyx_RefNannyAPIStruct *)r;
 }
 #endif
+
+/* GetItemInt */
+static PyObject *__Pyx_GetItemInt_Generic(PyObject *o, PyObject* j) {
+    PyObject *r;
+    if (!j) return NULL;
+    r = PyObject_GetItem(o, j);
+    Py_DECREF(j);
+    return r;
+}
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_List_Fast(PyObject *o, Py_ssize_t i,
+                                                              CYTHON_NCP_UNUSED int wraparound,
+                                                              CYTHON_NCP_UNUSED int boundscheck) {
+#if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+    Py_ssize_t wrapped_i = i;
+    if (wraparound & unlikely(i < 0)) {
+        wrapped_i += PyList_GET_SIZE(o);
+    }
+    if ((!boundscheck) || likely((0 <= wrapped_i) & (wrapped_i < PyList_GET_SIZE(o)))) {
+        PyObject *r = PyList_GET_ITEM(o, wrapped_i);
+        Py_INCREF(r);
+        return r;
+    }
+    return __Pyx_GetItemInt_Generic(o, PyInt_FromSsize_t(i));
+#else
+    return PySequence_GetItem(o, i);
+#endif
+}
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Tuple_Fast(PyObject *o, Py_ssize_t i,
+                                                              CYTHON_NCP_UNUSED int wraparound,
+                                                              CYTHON_NCP_UNUSED int boundscheck) {
+#if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+    Py_ssize_t wrapped_i = i;
+    if (wraparound & unlikely(i < 0)) {
+        wrapped_i += PyTuple_GET_SIZE(o);
+    }
+    if ((!boundscheck) || likely((0 <= wrapped_i) & (wrapped_i < PyTuple_GET_SIZE(o)))) {
+        PyObject *r = PyTuple_GET_ITEM(o, wrapped_i);
+        Py_INCREF(r);
+        return r;
+    }
+    return __Pyx_GetItemInt_Generic(o, PyInt_FromSsize_t(i));
+#else
+    return PySequence_GetItem(o, i);
+#endif
+}
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Fast(PyObject *o, Py_ssize_t i, int is_list,
+                                                     CYTHON_NCP_UNUSED int wraparound,
+                                                     CYTHON_NCP_UNUSED int boundscheck) {
+#if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS && CYTHON_USE_TYPE_SLOTS
+    if (is_list || PyList_CheckExact(o)) {
+        Py_ssize_t n = ((!wraparound) | likely(i >= 0)) ? i : i + PyList_GET_SIZE(o);
+        if ((!boundscheck) || (likely((n >= 0) & (n < PyList_GET_SIZE(o))))) {
+            PyObject *r = PyList_GET_ITEM(o, n);
+            Py_INCREF(r);
+            return r;
+        }
+    }
+    else if (PyTuple_CheckExact(o)) {
+        Py_ssize_t n = ((!wraparound) | likely(i >= 0)) ? i : i + PyTuple_GET_SIZE(o);
+        if ((!boundscheck) || likely((n >= 0) & (n < PyTuple_GET_SIZE(o)))) {
+            PyObject *r = PyTuple_GET_ITEM(o, n);
+            Py_INCREF(r);
+            return r;
+        }
+    } else {
+        PySequenceMethods *m = Py_TYPE(o)->tp_as_sequence;
+        if (likely(m && m->sq_item)) {
+            if (wraparound && unlikely(i < 0) && likely(m->sq_length)) {
+                Py_ssize_t l = m->sq_length(o);
+                if (likely(l >= 0)) {
+                    i += l;
+                } else {
+                    if (!PyErr_ExceptionMatches(PyExc_OverflowError))
+                        return NULL;
+                    PyErr_Clear();
+                }
+            }
+            return m->sq_item(o, i);
+        }
+    }
+#else
+    if (is_list || PySequence_Check(o)) {
+        return PySequence_GetItem(o, i);
+    }
+#endif
+    return __Pyx_GetItemInt_Generic(o, PyInt_FromSsize_t(i));
+}
 
 /* PyErrFetchRestore */
 #if CYTHON_FAST_THREAD_STATE
