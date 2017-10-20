@@ -5,4 +5,4 @@ To run script:
 
 $ python decode.py ddSeq.sam barcodeBlocks.txt 
 
-
+ATTAGTTAGAGGTATTTC

@@ -5,7 +5,10 @@ import pyximport  # install Cython to access pyximport
 pyximport.install(build_in_temp=False)
 from editDistance import edit_distance
 import sys
+import distance
 #import profile
+
+### LOW QUALITY CHECK ON UMI
 
 # parseBarcodes.py was written for the BioRad ddSeq procedure (scRNA).
 # This program applies a decoding algorithm recommended by Illumina to extract, parse and filter
@@ -42,8 +45,13 @@ def correct_bc_blocks(ref_barcode_blocks, barcode_block):
     # between the variable block and all 96 possible blocks, and makes corrections depending on the smallest
     # ED(edit distance) found. Barcode block is unchanged if smallest ED is 2.
 
-    lowest_hamming = 3  # start at highest reasonable number
+    # start above acceptable threshold
+    lowest_hamming = 6
     lh_reference_block = ''
+
+    # end function immediately if barcode block matches list of known barcode blocks
+    if barcode_block in ref_barcode_blocks:
+        return barcode_block
 
     # determine hamming distances between barcode block and all 96 possible blocks
     for reference_block in ref_barcode_blocks:
@@ -52,86 +60,130 @@ def correct_bc_blocks(ref_barcode_blocks, barcode_block):
         hamming_dist = (edit_distance(barcode_block, reference_block))
 
         if hamming_dist < lowest_hamming:
-            if hamming_dist == 0:
-                # if the given barcode block has 0 ED against a reference, we can end the loop early
-                break
             lowest_hamming = hamming_dist
             lh_reference_block = reference_block
+        if lowest_hamming == 1:
+            # print('Fix barcode to the one which is 1 ED apart')
+            barcode_block = lh_reference_block
+            return barcode_block
 
-    # find the blocks with the smallest hamming distances
-    if lowest_hamming == 1:
-        # print('Fix barcode to the one which is 1 ED apart')
-        barcode_block = lh_reference_block
-        #elif hamming_dict[shd_index] == 2:
-        #    print('Smallest ED is 2. Barcode will be not be changed.')
-        #elif hamming_dict[shd_index] > 2:
-        #    print('Smallest ED is > 2.')
 
-    # print('Adjusted barcode is:' + ref_barcode_blocks[shd_index])
+    # find the blocks with the smallest hamming distances. If that ED is >1, skip the read
+    barcode_block = None
 
     return barcode_block
 
 
-def extract_barcode(line, ref_barcode_blocks):
+def extract_barcode(line, ref_barcode_blocks, bad_phase, bad_block, low_quality, bad_linker):
     # Function 3: "extract_barcode" uses regex to extract barcode blocks and return complete barcodes
 
     # split read 1 to extract relevant parameters
     read1 = line.rstrip().split('\t')
     # match to where the sequence should be
     match_obj1 = read1[9]
+    phase_blocks = ['', 'A','CT','GCA','TGCG','ATCGA']
+    shift = 0
+    linker_ed = 0
 
     if match_obj1:
-        # allow up to 1 edit distance(ED) when matching for Linkers
-        # ?e flag forces best matches (as few EDs as possible)
-        linker1 = regex.findall("(?e)(TAGCCATCGCATTGC){e<=1}", match_obj1)
-        linker2 = regex.findall("(?e)(TACCTCTGAGCTGAA){e<=1}", match_obj1)
+        # match blocks accordingly with linkers, leaving room for 1 edit distance
+        # only keep reads where ACG and GACT anchors are not mutated
+        # main unaccounted case is if insertions occur before/after barcode and before ACG
+        linker1 = regex.search(r"(?e)(TAGCCATCGCATTGC){e<=1}", match_obj1)
+        linker2 = regex.search(r"(?e)(TACCTCTGAGCTGAA){e<=1}", match_obj1)
 
         if linker1 and linker2:
-            # match blocks accordingly with linkers
-            # consider potential insertions/deletions in barcodes/anchors
-            # only keep reads where ACG and GACT anchors are not mutated
-            # main unaccounted case is if insertions occur before/after barcode and before ACG
-            regex_search = r"^.*([ACGT]{6})" + str(linker1[0]) + r"([ACGT]{6})" \
-                           + str(linker2[0]) + r"([ACGT]{6})ACG([AGCT]{8})GACT"
-            # match to find the barcodes
-            match_obj2 = regex.match(regex_search, match_obj1)
+            pb = match_obj1[0:linker1.start(1) - 6]
+            linker1 = linker1.group(1)
+            linker2 = linker2.group(1)
 
-            if match_obj2:
-                bc1 = correct_bc_blocks(ref_barcode_blocks, match_obj2.group(1))
-                bc2 = correct_bc_blocks(ref_barcode_blocks, match_obj2.group(2))
-                bc3 = correct_bc_blocks(ref_barcode_blocks, match_obj2.group(3))
-                umi = match_obj2.group(4)
-                # for bc1, beginning is at index 0.
-                # for bc2, beginning is after at least bc1 (6b) and linker1 (15b)
-                # for bc3, beginning is after at least bc2 (12b) and linker2 (30b)
-                # 68 is the length of the sequence. Hard code it for speed. Otherwise, remove.
-                bc1_index = match_obj1.find(bc1, 0, 20)
-                bc2_index = match_obj1.find(bc2, 20, 41)
-                bc3_index = match_obj1.find(bc3, 41, 68)
+            if pb in phase_blocks:
+                if pb == phase_blocks[0]:
+                    mod = 0
+                elif pb == phase_blocks[1]:
+                    mod = 1
+                elif pb == phase_blocks[2]:
+                    mod = 2
+                elif pb == phase_blocks[3]:
+                    mod = 3
+                elif pb == phase_blocks[4]:
+                    mod = 4
+                elif pb == phase_blocks[5]:
+                    mod = 5
 
-                # count number of low quality bases.
-                low_quality_count = 0
-                # break the loop and remove the read combo if count is > 2
-                low_quality_count = check_bc_quality(read1[10], bc1_index, low_quality_count)
-                low_quality_count = check_bc_quality(read1[10], bc2_index, low_quality_count)
-                low_quality_count = check_bc_quality(read1[10], bc3_index, low_quality_count)
+                bc1 = match_obj1[0+mod:6+mod]
 
-                if low_quality_count < 3:
-                    cell_bc = bc1 + bc2 + bc3
-                    return match_obj1, cell_bc, umi
+                if distance.levenshtein(linker1, 'TAGCCATCGCATTGC') > 0:
+                    # that's one edit distance
+                    linker_ed += 1
+                    if len(linker1) > 15:  # linker length
+                        # all indices after linker 1 need to shift
+                        shift += 1
+                    elif len(linker1) < 15:
+                        shift -= 1
 
+                bc2 = match_obj1[21+shift+mod:27+shift+mod]
+
+                if distance.levenshtein(linker2, 'TACCTCTGAGCTGAA') == 1 and linker_ed == 0:
+                    # all indices after linker 2 need to shift
+                    if len(linker2) > 15:  # linker length
+                        shift += 1
+                    elif len(linker2) < 15:
+                        shift -= 1
+                elif distance.levenshtein(linker2, 'TACCTCTGAGCTGAA') == 1 and linker_ed > 0:
+                    # problem. Too many EDs. Drop the read.
+                    # bad linkers
+                    return None, None, None, bad_phase, bad_block, low_quality, bad_linker
+
+                bc3 = match_obj1[42+shift+mod:48+shift+mod]
+                acggac = match_obj1[48+shift+mod:51+shift+mod] + match_obj1[59+shift+mod:62+shift+mod]
+
+                if edit_distance(acggac, 'ACGGAC') > 0:
+                    # problem mutations. drop the read
+                    bad_block += 1
+                    return None, None, None, bad_phase, bad_block, low_quality, bad_linker
+                umi = match_obj1[51+shift+mod:59+shift+mod]
+
+                bc1 = correct_bc_blocks(ref_barcode_blocks, bc1)
+                bc2 = correct_bc_blocks(ref_barcode_blocks, bc2)
+                bc3 = correct_bc_blocks(ref_barcode_blocks, bc3)
+
+                if bc1 and bc2 and bc3:
+                    # for bc1, beginning is at index 0.
+                    # for bc2, beginning is after at least bc1 (6b) and linker1 (15b)
+                    # for bc3, beginning is after at least bc2 (12b) and linker2 (30b)
+                    # 68 is the length of the sequence. Hard code it for speed. Otherwise, remove.
+                    bc1_index = match_obj1.find(bc1, 0, 20)
+                    bc2_index = match_obj1.find(bc2, 20, 41)
+                    bc3_index = match_obj1.find(bc3, 41, 55)
+                    umi_index = match_obj1.find(umi, 48, 68)
+
+                    # count number of low quality bases.
+                    low_quality_count = 0
+                    # break the loop and remove the read combo if count is > 2
+                    low_quality_count = check_bc_quality(read1[10], bc1_index, low_quality_count)
+                    low_quality_count = check_bc_quality(read1[10], bc2_index, low_quality_count)
+                    low_quality_count = check_bc_quality(read1[10], bc3_index, low_quality_count)
+                    low_quality_count = check_bc_quality(read1[10], umi_index, low_quality_count)
+
+                    # Up to 2 low quality barcode bases allowed
+                    if low_quality_count < 2:
+                        cell_bc = bc1 + bc2 + bc3
+                        return match_obj1, cell_bc, umi, bad_phase, bad_block, low_quality, bad_linker
+
+                    else:
+                        low_quality += 1
+                        pass
                 else:
+                    bad_block += 1
                     pass
 
             else:
-                # print("Regex match failed. Either sequence was mutated beyond acceptable measures"
-                # "or the wrong read was processed")
+                bad_phase += 1
                 pass
-
         else:
-            # print("Linkers could not be found in good condition (ED > 1)")
+            bad_linker += 1
             pass
-
     else:
         # print('Did not match to a SAM record')
         pass
@@ -140,12 +192,16 @@ def extract_barcode(line, ref_barcode_blocks):
     match_obj1 = None
     cell_bc = None
 
-    return match_obj1, cell_bc, umi
+    return match_obj1, cell_bc, umi, bad_phase, bad_block, low_quality, bad_linker
 
 
 def read_and_write_sam(all_records, ref_barcode_blocks, output):
     # Function 2 "read_and_write_sam" accounts for edit distance while extracting barcodes
     # Includes the correct_bc_blocks function in order to return full barcode
+    bad_phase = 0
+    bad_block = 0
+    low_quality = 0
+    bad_linker = 0
 
     try:
         originalSAM = open(all_records, 'r')
@@ -168,7 +224,8 @@ def read_and_write_sam(all_records, ref_barcode_blocks, output):
         # every even line refers to read1. Decode read1 for barcodes. Do not write read1 to new SAM file
         if count % 2 == 0:
 
-            match_obj1, cell_bc, umi = extract_barcode(line, ref_barcode_blocks)
+            match_obj1, cell_bc, umi, bad_phase, bad_block, low_quality, bad_linker = extract_barcode(
+                line, ref_barcode_blocks, bad_phase, bad_block, low_quality, bad_linker)
 
         # every odd line is read2. Read2 will have its sequence appended by the previous read1 barcode
         if count % 2 == 1 and match_obj1:
@@ -178,6 +235,10 @@ def read_and_write_sam(all_records, ref_barcode_blocks, output):
 
     originalSAM.close()
     barcodedRead2File.close()
+    print("Bad phases: " + str(bad_phase))
+    print("Bad blocks: " + str(bad_block))
+    print("Low quality blocks: " + str(low_quality))
+    print("Bad linkers: " + str(bad_linker))
 
     return
 
