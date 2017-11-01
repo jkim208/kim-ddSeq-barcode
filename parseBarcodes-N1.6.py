@@ -18,6 +18,15 @@ import distance
 # barcodes in read 1 of a paired set. The barcode information is then tagged onto the SAM file record
 # of read 2.
 
+# Decoding logic:
+# The bar code component has 6 read structures, 5 of which have distinct phase blocks. Room for mutations
+# should be minimized to 1 edit distance (insertion, deletion, substitution) and indels will be only allowed to
+# occur in the linkers (when it does occur in the linker, a counter will keep track of the change for the
+# downstream base positions to assure that only one indel exists per read). An insertion or deletion at
+# the bar code will lead to a dropped read. Any substitution mutations on the bar codes will be corrected
+# if possible. The ACG and GAC anchors are used to catch non-linker insertions/deletions and confirm
+# correct positioning of the read.
+
 
 def append_barcode(line, cell_bc, umi):
     # Function 6 "append_barcode" takes the barcode and adds it to the record as a separate tag
@@ -75,9 +84,13 @@ def correct_bc_blocks(ref_barcode_blocks, barcode_block):
     return barcode_block
 
 
-def extract_barcode(line, ref_barcode_blocks, bad_phase, bad_block, low_quality, bad_linker):
+def extract_barcode(line, ref_barcode_blocks):
     # Function 3: "extract_barcode" uses regex to extract barcode blocks and return complete barcodes
-
+    global bad_phase
+    global bad_block
+    global low_quality
+    global bad_linker
+    global matches
     # split read 1 to extract relevant parameters
     read1 = line.rstrip().split('\t')
     # match to where the sequence should be
@@ -134,7 +147,7 @@ def extract_barcode(line, ref_barcode_blocks, bad_phase, bad_block, low_quality,
                 elif distance.levenshtein(linker2, 'TACCTCTGAGCTGAA') == 1 and linker_ed > 0:
                     # problem. Too many EDs. Drop the read.
                     bad_linker += 1
-                    return None, None, None, bad_phase, bad_block, low_quality, bad_linker
+                    return None, None, None
 
                 bc3 = match_obj1[42+shift+mod:48+shift+mod]
                 acggac = match_obj1[48+shift+mod:51+shift+mod] + match_obj1[59+shift+mod:62+shift+mod]
@@ -142,7 +155,7 @@ def extract_barcode(line, ref_barcode_blocks, bad_phase, bad_block, low_quality,
                 if edit_distance(acggac, 'ACGGAC') > 0:
                     # problem mutations perhaps on the barcodes. Drop the read
                     bad_block += 1
-                    return None, None, None, bad_phase, bad_block, low_quality, bad_linker
+                    return None, None, None
 
                 umi = match_obj1[51+shift+mod:59+shift+mod]
 
@@ -171,7 +184,8 @@ def extract_barcode(line, ref_barcode_blocks, bad_phase, bad_block, low_quality,
                     # Up to 2 low quality barcode bases allowed
                     if low_quality_count < 2:
                         cell_bc = bc1 + bc2 + bc3
-                        return match_obj1, cell_bc, umi, bad_phase, bad_block, low_quality, bad_linker
+                        matches += 1
+                        return match_obj1, cell_bc, umi
 
                     else:
                         low_quality += 1
@@ -194,16 +208,12 @@ def extract_barcode(line, ref_barcode_blocks, bad_phase, bad_block, low_quality,
     match_obj1 = None
     cell_bc = None
 
-    return match_obj1, cell_bc, umi, bad_phase, bad_block, low_quality, bad_linker
+    return match_obj1, cell_bc, umi
 
 
 def read_and_write_sam(all_records, ref_barcode_blocks, output):
     # Function 2 "read_and_write_sam" accounts for edit distance while extracting barcodes
     # Includes the correct_bc_blocks function in order to return full barcode
-    bad_phase = 0
-    bad_block = 0
-    low_quality = 0
-    bad_linker = 0
 
     try:
         originalSAM = open(all_records, 'r')
@@ -226,8 +236,7 @@ def read_and_write_sam(all_records, ref_barcode_blocks, output):
         # every even line refers to read1. Decode read1 for barcodes. Do not write read1 to new SAM file
         if count % 2 == 0:
 
-            match_obj1, cell_bc, umi, bad_phase, bad_block, low_quality, bad_linker = extract_barcode(
-                line, ref_barcode_blocks, bad_phase, bad_block, low_quality, bad_linker)
+            match_obj1, cell_bc, umi = extract_barcode(line, ref_barcode_blocks)
 
         # every odd line is read2. Read2 will have its sequence appended by the previous read1 barcode
         if count % 2 == 1 and match_obj1:
@@ -277,4 +286,10 @@ def main():
 
 
 if __name__ == "__main__":
+    bad_phase = 0
+    bad_block = 0
+    low_quality = 0
+    bad_linker = 0
+    matches = 0
+
     main()
