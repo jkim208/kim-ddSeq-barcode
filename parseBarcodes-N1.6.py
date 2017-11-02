@@ -8,9 +8,8 @@ import sys
 import distance
 
 # Updates:
-# Low quality check added to UMI
-# Search for linkers (linker 1 via forward search, linker 2 via reverse search)
-# From there, use indices and check correctness of positions
+# Any mutations in linker 1 are not accepted. This includes substitutions.
+# No quality score of < 10 is allowed
 
 # Summary:
 # parseBarcodes.py was written for the BioRad ddSeq procedure (scRNA).
@@ -34,20 +33,22 @@ def append_barcode(line, cell_bc, umi):
     return line
 
 
-def check_bc_quality(q_seq, bc_index, low_q_count):
+def check_bc_quality(q_seq, bc_index):
     # Function 5 'check_bc_quality' accepts a quality sequence string, a barcode index, and current low
     # quality count. Via the barcode index, the function checks if the corresponding quality string
     # indicates any low quality bases. If any are detected, loq_q_count is incremented by 1.
     # Function 4 is used in function 3 (demultiplexing) and returns the new low_q_count.
+    low_q_count = 0
 
     for element in q_seq[bc_index:bc_index + 6]:
         # Break out of loop immediately if low_q_count threshold has been passed
-        if low_q_count > 2:
+        if low_q_count > 0:
             break
 
         # Check the ASCII code if the base quality is low (q-score 10 = ASCII score 43)
         if ord(element) < 43:
             low_q_count += 1
+            print('hi')
 
     return low_q_count
 
@@ -103,7 +104,7 @@ def extract_barcode(line, ref_barcode_blocks):
         # match blocks accordingly with linkers, leaving room for 1 edit distance
         # only keep reads where ACG and GACT anchors are not mutated
         # main unaccounted case is if insertions occur before/after barcode and before ACG
-        linker1 = regex.search(r"(?e)(TAGCCATCGCATTGC){e<=1}", match_obj1)
+        linker1 = regex.search(r"(TAGCCATCGCATTGC)", match_obj1)
         linker2 = regex.search(r"(?er)(TACCTCTGAGCTGAA){e<=1}", match_obj1)
 
         if linker1 and linker2:
@@ -176,13 +177,13 @@ def extract_barcode(line, ref_barcode_blocks):
                     # count number of low quality bases.
                     low_quality_count = 0
                     # break the loop and remove the read combo if count is > 2
-                    low_quality_count = check_bc_quality(read1[10], bc1_index, low_quality_count)
-                    low_quality_count = check_bc_quality(read1[10], bc2_index, low_quality_count)
-                    low_quality_count = check_bc_quality(read1[10], bc3_index, low_quality_count)
-                    low_quality_count = check_bc_quality(read1[10], umi_index, low_quality_count)
+                    low_quality_count += check_bc_quality(read1[10], bc1_index)
+                    low_quality_count += check_bc_quality(read1[10], bc2_index)
+                    low_quality_count = check_bc_quality(read1[10], bc3_index)
+                    low_quality_count = check_bc_quality(read1[10], umi_index)
 
-                    # Up to 2 low quality barcode bases allowed
-                    if low_quality_count < 2:
+                    # No low quality barcode bases allowed
+                    if low_quality_count == 0:
                         cell_bc = bc1 + bc2 + bc3
                         matches += 1
                         return match_obj1, cell_bc, umi
