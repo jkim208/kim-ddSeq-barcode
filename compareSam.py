@@ -9,42 +9,15 @@ import re
 # pipeline, and locates differences in bar codes. The experiment goal is to determine where the discrepancies
 # in gene and transcript counts are coming from when comparing these two pipelines. Consistent differences
 # in the bar codes and umis' may suggest key differences in the pipelines' demultiplexing algorithms.
-
+extra_records_custom = 0
+exact_matches = 0
 
 def is_read(s):
     return not s.startswith('@')
 
 
-def read_file(file):
-    try:
-        filehandle = open(file, 'r')
-    except IOError:
-        print("Could not open file for reading. Ending program...")
-        sys.exit()
-    return filehandle
-
-
-def main():
-    # Main function
-    # grab SAM filename/path from command line arguments
-    parser = argparse.ArgumentParser(description='')
-    required_group = parser.add_argument_group('required arguments')
-    required_group.add_argument("-illumina", help='Illumina SAM file', required=True, metavar='')
-    required_group.add_argument("-custom", help='Custom Pipeline SAM file', required=True, metavar='')
-    required_group.add_argument("-read1", help ='Original read1 fastq file', required=True, metavar='')
-    required_group.add_argument("-output", help='.sam output file', required=True, metavar='')
-    args = parser.parse_args()
-
+def create_illumina_dictionary(illumina):
     illumina_dict = {}
-    compare_dict = {}
-
-    print('Opening Illumina file for reading...')
-
-    # Open files early to detect errors immediately
-    illumina = read_file(args.illumina)
-    custom = read_file(args.custom)
-    read1 = read_file(args.read1)
-
     for line in filter(is_read, illumina):
         elements = line.rstrip().split('\t')
 
@@ -61,16 +34,20 @@ def main():
             s1_bc = bc_f[0][3:24].upper()
             s1_umi = umi_f[0][3:14].upper()
             illumina_dict[elements[0]] = [s1_bc, s1_umi]
-        else:
+        elif elements[0]:
             # when bar code is missing, keep record
             illumina_dict[elements[0]] = []
+        else:  # unusual empty records (perhaps extra newlines in SAM)
+            pass
 
     illumina.close()
+    return illumina_dict
 
-    print('Illumina file successfully closed. Reading custom output...')
 
-    extra_records_custom = 0
-    exact_matches = 0
+def create_compare_dictionary(custom, illumina_dict):
+    compare_dict = {}
+    global extra_records_custom
+    global exact_matches
 
     for line in filter(is_read, custom):
         elements = line.rstrip().split('\t')
@@ -114,6 +91,8 @@ def main():
                 else:
                     # illumina has no bar code on this key. Custom does have a bar code. Keep record.
                     compare_dict[key] = illumina_dict[key]
+                    # remove illumina dictionary entry (remaining entries are of interest: never appear in custom)
+                    del illumina_dict[key]
                     key_c = key + '-C'
                     compare_dict[key_c] = [s2_bc, s2_umi]
                     if gene_f:  # throw in gene info
@@ -124,6 +103,8 @@ def main():
                 # check if Illumina does have a bar code + umi. If so, a missing bar code in custom is significant
                 if len(illumina_dict[key]) == 2:
                     compare_dict[key] = illumina_dict[key]
+                    # remove illumina dictionary entry (remaining entries are of interest: never appear in custom)
+                    del illumina_dict[key]
                     key_c = key + '-C'
                     compare_dict[key_c] = []
                 else:  # both records lack bar codes. Custom pipeline worked correctly. Remove record.
@@ -137,8 +118,42 @@ def main():
             # unhelpful for comparison purposes. Nothing to compare to. Likely mapping issue if it occurs.
             extra_records_custom += 1
             # custom has no bar codes and illumina doesnt even have a record
-            # unhelpful for comparison purposes. Nothing to compare to. Likely mapping issue if it occurs.
-            #extra_records_custom += 1
+
+    return compare_dict
+
+
+def read_file(file):
+    try:
+        filehandle = open(file, 'r')
+    except IOError:
+        print("Could not open file for reading. Ending program...")
+        sys.exit()
+    return filehandle
+
+
+def main():
+    # Main function
+    # grab SAM filename/path from command line arguments
+    parser = argparse.ArgumentParser(description='')
+    required_group = parser.add_argument_group('required arguments')
+    required_group.add_argument("-illumina", help='Illumina SAM file', required=True, metavar='')
+    required_group.add_argument("-custom", help='Custom Pipeline SAM file', required=True, metavar='')
+    required_group.add_argument("-read1", help ='Original read1 fastq file', required=True, metavar='')
+    required_group.add_argument("-output", help='.sam output file', required=True, metavar='')
+    args = parser.parse_args()
+
+    print('Opening Illumina file for reading...')
+
+    # Open files early to detect errors immediately
+    illumina = read_file(args.illumina)
+    custom = read_file(args.custom)
+    read1 = read_file(args.read1)
+
+    illumina_dict = create_illumina_dictionary(illumina)
+
+    print('Illumina file successfully closed. Reading custom output...')
+
+    compare_dict = create_compare_dictionary(custom, illumina_dict)
 
     extra_records_illumina = len(illumina_dict)
     wrong_matches = int(len(compare_dict) / 2)  # account for how we add custom keys to same dictionary
@@ -159,7 +174,7 @@ def main():
                     compare_dict[identifier].append('Read 1: ' + line.rstrip())
 
         elif count == 4:
-            count = 0
+            count = 0  # reset counter
 
         count += 1
 
@@ -173,21 +188,9 @@ def main():
         f.write('Number of records with exact matches in bar codes: ' + str(exact_matches) + '\n')
         f.write('Number of records with wrong matches in bar codes: ' + str(wrong_matches) + '\n\n')
         sorted_sam_keys = sorted(compare_dict.keys())
-        for count,key in enumerate(sorted_sam_keys, 1):
-            if len(compare_dict[key]) == 1:  # this accounts for illumina entry only having read1 seq
-                f.write(key + '\n')
-                print(key)
-            else:
-                f.write(key + '\t' + str(compare_dict[key][:3]) + '\n')
-                print(key + '\t' + str(compare_dict[key][:3]))
-
-            if count % 2 == 0:  # after writing both versions of an entry, get the corresponding read1
-                # add original read 1 sequence for comparison
-                key = key[:-2]  # remove '-C' since read 1 won't have it
-                if len(compare_dict[key]) == 2:  # this shouldn't happen. Illumina missing one of umi/bc/read1.
-                    print('ERROR: Illumina read missing a umi, bar code, or read1. Try a different fastq read1.')
-
-                f.write('\n')
+        for key in (sorted_sam_keys):
+            f.write(key + '\t' + str(compare_dict[key][:3]) + '\n')
+            print(key + '\t' + str(compare_dict[key][:3]))
     return
 
 

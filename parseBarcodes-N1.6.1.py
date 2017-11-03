@@ -10,6 +10,7 @@ import distance
 # Updates:
 # Any mutations in linker 1 + 2 are not accepted. This includes substitutions.
 # No quality score of < 10 is allowed
+# Read 1 sequence MUST end in GAC[T]+
 
 # Summary:
 # parseBarcodes.py was written for the BioRad ddSeq procedure (scRNA).
@@ -137,10 +138,10 @@ def demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1):
         return None, None, None
 
     bc3 = match_obj1[linker2.end(1): linker2.end(1) + 6]
-    acggac = match_obj1[linker2.end(1) + 6:linker2.end(1) + 9] + \
-             match_obj1[linker2.end(1) + 17:linker2.end(1) + 20]
+    ACGGACT = match_obj1[linker2.end(1) + 6:linker2.end(1) + 9] + \
+             match_obj1[linker2.end(1) + 17:linker2.end(1) + 21]
 
-    if edit_distance(acggac, 'ACGGAC') > 0:
+    if edit_distance(ACGGACT, 'ACGGACT') > 0:
         # problem mutations perhaps on the barcodes. Drop the read
         bad_block += 1
         return None, None, None
@@ -195,6 +196,7 @@ def extract_barcode(line, ref_barcode_blocks):
     # Function 3: "extract_barcode" uses regex to extract barcode blocks and return complete barcodes
     # split read 1 to extract relevant parameters
     read1 = line.rstrip().split('\t')
+
     # match to where the sequence should be
     match_obj1 = read1[9]
     phase_blocks = ['', 'A','CT','GCA','TGCG','ATCGA']
