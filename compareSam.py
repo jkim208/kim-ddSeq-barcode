@@ -188,9 +188,11 @@ def main():
         f.write('Number of records with exact matches in bar codes: ' + str(exact_matches) + '\n')
         f.write('Number of records with wrong matches in bar codes: ' + str(wrong_matches) + '\n\n')
         sorted_sam_keys = sorted(compare_dict.keys())
-        for key in (sorted_sam_keys):
-            f.write(key + '\t' + str(compare_dict[key][:3]) + '\n')
-            print(key + '\t' + str(compare_dict[key][:3]))
+        for count, key in enumerate(sorted_sam_keys, 2):
+            if count % 2 == 0:
+                f.write(key + '\t' + str(compare_dict[key][:3]) + '\n')
+            else:
+                f.write(key + '\t' + str(compare_dict[key][:3]) + '\n\n')
     return
 
 

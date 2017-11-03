@@ -10,7 +10,7 @@ import distance
 # Updates:
 # Any mutations in linker 1 + 2 are not accepted. This includes substitutions.
 # No quality score of < 10 is allowed
-# Read 1 sequence MUST end in GAC[T]+
+# Read 1 sequence MUST end in GAC[T]+. Used distance.levenshtein to track missing T's. 
 
 # Summary:
 # parseBarcodes.py was written for the BioRad ddSeq procedure (scRNA).
@@ -141,8 +141,8 @@ def demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1):
     ACGGACT = match_obj1[linker2.end(1) + 6:linker2.end(1) + 9] + \
              match_obj1[linker2.end(1) + 17:linker2.end(1) + 21]
 
-    if edit_distance(ACGGACT, 'ACGGACT') > 0:
-        # problem mutations perhaps on the barcodes. Drop the read
+    if distance.levenshtein(ACGGACT, 'ACGGACT') > 0:
+        # problem mutations perhaps on the barcodes or frameshift mutation pushed off T's at the end
         bad_block += 1
         return None, None, None
 

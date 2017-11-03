@@ -1,7 +1,11 @@
 Number of records found ONLY in custom pipeline: 0
 Number of records found ONLY in Illumina pipeline: 0
 Number of records with exact matches in bar codes: 1
-Number of records with wrong matches in bar codes: 1
+Number of records with wrong matches in bar codes: 2
 
 M02850:227:000000000-ATG1H:1:2116:15684:20517	['Z:GGATTGAGATGTATCCGG', 'Z:AAAAAAAA', 'Read 1: CTCTCAATTAGCCATCGCATTGCGGTAGGTACCTCTAAGCTGAAGGTGCTACGTGCCGCCCGACTTTT']
 M02850:227:000000000-ATG1H:1:2116:15684:20517-C	[]
+
+M02850:227:000000000-ATG1H:1:2116:15684:20518	['Z:GGATTGAGATGTATCCGG', 'Z:AAAAAAAA']
+M02850:227:000000000-ATG1H:1:2116:15684:20518-C	[]
+
