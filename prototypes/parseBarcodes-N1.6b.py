@@ -8,12 +8,9 @@ import sys
 import distance
 
 # Updates:
-# ACGGAC must be correctly positioned. There MUST be >=1 base after the anchor
-# Any indels in linker 1 + 2 are not accepted.
-# No quality score of < 10 is allowed in barcodes/umi
-# #REMOVED# Read 1 sequence MUST end in GAC[T]+. Used distance.levenshtein to track missing T's.
-# Phase blocks accept indels/substitutions (doing so prevents room for future mutations in that sequence)
-# The sequence tail (ACGGACT) can accept mutations (up to 1 ED assuming no other source of EDs)
+# Any mutations in linker 1 + 2 are not accepted. This includes substitutions.
+# No quality score of < 10 is allowed
+# Read 1 sequence MUST end in GAC[T]+
 
 # Summary:
 # parseBarcodes.py was written for the BioRad ddSeq procedure (scRNA).
@@ -100,6 +97,24 @@ def correct_bc_blocks(ref_barcode_blocks, barcode_block):
     return barcode_block
 
 
+def find_pb_offset(pb, phase_blocks):
+    if pb == phase_blocks[0]:
+        mod = 0
+    elif pb == phase_blocks[1]:
+        mod = 1
+    elif pb == phase_blocks[2]:
+        mod = 2
+    elif pb == phase_blocks[3]:
+        mod = 3
+    elif pb == phase_blocks[4]:
+        mod = 4
+    elif pb == phase_blocks[5]:
+        mod = 5
+    else:
+        mod = None
+    return mod
+
+
 def demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1):
     global bad_phase
     global bad_block
@@ -107,21 +122,27 @@ def demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1):
     global bad_linker
     global matches
 
+    linker_ed = 0
     bc1 = match_obj1[0 + mod:6 + mod]
 
+    if edit_distance(linker1.group(1), 'TAGCCATCGCATTGC') > 0:
+        # that's one edit distance
+        linker_ed += 1
+
     bc2 = match_obj1[linker1.end(1): linker2.start(1)]
+    # bc2 = match_obj1[21+shift+mod:27+shift+mod]
 
-    bc3 = match_obj1[linker2.end(1): linker2.end(1) + 6]
-    ACGGAC = match_obj1[linker2.end(1) + 6:linker2.end(1) + 9] + \
-             match_obj1[linker2.end(1) + 17:linker2.end(1) + 20]
-    postBase = match_obj1[linker2.end(1) + 20:]  # need a base after the GAC anchor
-
-    if edit_distance(ACGGAC, 'ACGGAC') > 0:
-        # mutations in these two anchors are not tolerated
-        bad_block += 1
+    if edit_distance(linker2.group(1), 'TACCTCTGAGCTGAA') == 1 and linker_ed > 0:
+        # problem. Too many EDs. Drop the read.
+        bad_linker += 1
         return None, None, None
 
-    if not postBase:
+    bc3 = match_obj1[linker2.end(1): linker2.end(1) + 6]
+    ACGGACT = match_obj1[linker2.end(1) + 6:linker2.end(1) + 9] + \
+             match_obj1[linker2.end(1) + 17:linker2.end(1) + 21]
+
+    if distance.levenshtein(ACGGACT, 'ACGGACT') > 0:
+        # problem mutations perhaps on the barcodes. Drop the read
         bad_block += 1
         return None, None, None
 
@@ -146,7 +167,7 @@ def demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1):
 
         # count number of low quality bases.
         low_quality_count = 0
-        # break the loop and remove the read combo if count is > 1
+        # break the loop and remove the read combo if count is > 2
         low_quality_count += check_bc_quality(read1[10], bc1_index)
         low_quality_count += check_bc_quality(read1[10], bc2_index)
         low_quality_count += check_bc_quality(read1[10], bc3_index)
@@ -178,40 +199,29 @@ def extract_barcode(line, ref_barcode_blocks):
 
     # match to where the sequence should be
     match_obj1 = read1[9]
-
     phase_blocks = ['', 'A','CT','GCA','TGCG','ATCGA']
 
     if match_obj1:
         # match blocks accordingly with linkers, leaving room for 1 edit distance
         # only keep reads where ACG and GACT anchors are not mutated
         # main unaccounted case is if insertions occur before/after barcode and before ACG
-        linker1 = regex.search(r"(TAGCCATCGCATTGC){s<=1}", match_obj1)
-        linker2 = regex.search(r"(?er)(TACCTCTGAGCTGAA){s<=1}", match_obj1)
+        linker1 = regex.search(r"([AGCT]AGCCATCGCATTGC)", match_obj1)
+        linker2 = regex.search(r"(?er)([AGCT]ACCTCTGAGCTGAA)", match_obj1)
 
         if linker1 and linker2:
 
-            if 'N' in match_obj1[0:linker2.end(1) + 20]:  # remove reads with an N base up to the GAC anchor
-                return None, None, None
-
             pb = match_obj1[0:linker1.start(1) - 6]
 
-            if pb in phase_blocks:  # same as if ED = 0 between pb and corresponding reference block
-                mod = len(pb)
+            if pb in phase_blocks:
+                mod = find_pb_offset(pb, phase_blocks)
                 return demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1)
 
-            lowest_dist = 2
-            for phase_block in phase_blocks:
-
-                dist = distance.levenshtein(pb, phase_block)
-
-                if dist < lowest_dist:
-                    lowest_dist = dist
-                    pb_reference = phase_block
-
-            if lowest_dist <= 2:  # ??? Might be too much
-                mod = len(pb)
+            elif pb[0:-1] in phase_blocks:
+                pb = pb[0:-1]
+                mod = find_pb_offset(pb, phase_blocks) + 1
                 return demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1)
-            else:  # lowest levenshtein distance is > 1
+
+            else:
                 bad_phase += 1
                 pass
         else:

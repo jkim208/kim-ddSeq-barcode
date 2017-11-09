@@ -8,10 +8,9 @@ import sys
 import distance
 
 # Updates:
-# ACGGAC must be correctly positioned. There MUST be >=1 base after the anchor
 # Any indels in linker 1 + 2 are not accepted.
-# No quality score of < 10 is allowed in barcodes/umi
-# #REMOVED# Read 1 sequence MUST end in GAC[T]+. Used distance.levenshtein to track missing T's.
+# No quality score of < 10 is allowed
+# Read 1 sequence MUST end in GAC[T]+. Used distance.levenshtein to track missing T's.
 # Phase blocks accept indels/substitutions (doing so prevents room for future mutations in that sequence)
 # The sequence tail (ACGGACT) can accept mutations (up to 1 ED assuming no other source of EDs)
 
@@ -106,22 +105,22 @@ def demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1):
     global low_quality
     global bad_linker
     global matches
+    linker_ed = 0
 
     bc1 = match_obj1[0 + mod:6 + mod]
 
     bc2 = match_obj1[linker1.end(1): linker2.start(1)]
 
     bc3 = match_obj1[linker2.end(1): linker2.end(1) + 6]
-    ACGGAC = match_obj1[linker2.end(1) + 6:linker2.end(1) + 9] + \
-             match_obj1[linker2.end(1) + 17:linker2.end(1) + 20]
-    postBase = match_obj1[linker2.end(1) + 20:]  # need a base after the GAC anchor
+    ACGGACT = match_obj1[linker2.end(1) + 6:linker2.end(1) + 9] + \
+             match_obj1[linker2.end(1) + 17:linker2.end(1) + 21]
 
-    if edit_distance(ACGGAC, 'ACGGAC') > 0:
-        # mutations in these two anchors are not tolerated
+    if distance.levenshtein(ACGGACT, 'ACGGACT') > 1:
+        # problem mutations perhaps on the barcodes or frameshift mutation pushed off T's at the end
         bad_block += 1
         return None, None, None
 
-    if not postBase:
+    if read1[9][len(read1[9])-3: len(read1[9])] == 'GAC':
         bad_block += 1
         return None, None, None
 
@@ -146,7 +145,7 @@ def demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1):
 
         # count number of low quality bases.
         low_quality_count = 0
-        # break the loop and remove the read combo if count is > 1
+        # break the loop and remove the read combo if count is > 2
         low_quality_count += check_bc_quality(read1[10], bc1_index)
         low_quality_count += check_bc_quality(read1[10], bc2_index)
         low_quality_count += check_bc_quality(read1[10], bc3_index)
@@ -178,7 +177,6 @@ def extract_barcode(line, ref_barcode_blocks):
 
     # match to where the sequence should be
     match_obj1 = read1[9]
-
     phase_blocks = ['', 'A','CT','GCA','TGCG','ATCGA']
 
     if match_obj1:
@@ -189,9 +187,6 @@ def extract_barcode(line, ref_barcode_blocks):
         linker2 = regex.search(r"(?er)(TACCTCTGAGCTGAA){s<=1}", match_obj1)
 
         if linker1 and linker2:
-
-            if 'N' in match_obj1[0:linker2.end(1) + 20]:  # remove reads with an N base up to the GAC anchor
-                return None, None, None
 
             pb = match_obj1[0:linker1.start(1) - 6]
 
@@ -208,7 +203,7 @@ def extract_barcode(line, ref_barcode_blocks):
                     lowest_dist = dist
                     pb_reference = phase_block
 
-            if lowest_dist <= 2:  # ??? Might be too much
+            if lowest_dist == 1:
                 mod = len(pb)
                 return demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1)
             else:  # lowest levenshtein distance is > 1

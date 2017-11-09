@@ -10,7 +10,7 @@ import distance
 # Updates:
 # ACGGAC must be correctly positioned. There MUST be >=1 base after the anchor
 # Any indels in linker 1 + 2 are not accepted.
-# No quality score of < 10 is allowed in barcodes/umi
+# No quality score of < 10 is allowed
 # #REMOVED# Read 1 sequence MUST end in GAC[T]+. Used distance.levenshtein to track missing T's.
 # Phase blocks accept indels/substitutions (doing so prevents room for future mutations in that sequence)
 # The sequence tail (ACGGACT) can accept mutations (up to 1 ED assuming no other source of EDs)
@@ -106,6 +106,7 @@ def demultiplex(match_obj1, mod, linker1, linker2, ref_barcode_blocks, read1):
     global low_quality
     global bad_linker
     global matches
+    linker_ed = 0
 
     bc1 = match_obj1[0 + mod:6 + mod]
 
@@ -178,6 +179,8 @@ def extract_barcode(line, ref_barcode_blocks):
 
     # match to where the sequence should be
     match_obj1 = read1[9]
+    if 'N' in match_obj1:
+        return None, None, None
 
     phase_blocks = ['', 'A','CT','GCA','TGCG','ATCGA']
 
@@ -189,9 +192,6 @@ def extract_barcode(line, ref_barcode_blocks):
         linker2 = regex.search(r"(?er)(TACCTCTGAGCTGAA){s<=1}", match_obj1)
 
         if linker1 and linker2:
-
-            if 'N' in match_obj1[0:linker2.end(1) + 20]:  # remove reads with an N base up to the GAC anchor
-                return None, None, None
 
             pb = match_obj1[0:linker1.start(1) - 6]
 

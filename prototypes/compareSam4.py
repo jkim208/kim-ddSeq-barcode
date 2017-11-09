@@ -22,7 +22,6 @@ def is_read(s):
 
 def create_illumina_dictionary(illumina):
     illumina_dict = {}
-    illumina_no_bc_list = []
     for line in filter(is_read, illumina):
         elements = line.rstrip().split('\t')
 
@@ -39,11 +38,11 @@ def create_illumina_dictionary(illumina):
             s1_bc = bc_f[0][3:24].upper()
             s1_umi = umi_f[0][3:14].upper()
             illumina_dict[elements[0]] = [s1_bc, s1_umi]
-        else:  # barcode-lacking records
-            illumina_no_bc_list.append(elements[0])
+        else:  # throw out all barcode-lacking records
+            pass
 
     illumina.close()
-    return illumina_dict, illumina_no_bc_list
+    return illumina_dict
 
 
 def create_compare_dictionary(illumina_dict, custom):
@@ -93,7 +92,6 @@ def create_compare_dictionary(illumina_dict, custom):
                 print('Custom is missing barcodes/umi at ' + key)
 
         # Illumina dropped this read or does not have barcodes for this read. Custom however does.
-        # Important to distinguish the type of filtering used later
         else:
             custom_dict[key] = elements
             # Custom has the bar codes
@@ -132,7 +130,7 @@ def main():
     custom = read_file(args.custom)
     read1 = read_file(args.read1)
 
-    illumina_dict, illumina_no_bc_list = create_illumina_dictionary(illumina)
+    illumina_dict = create_illumina_dictionary(illumina)
 
     print('Illumina file successfully closed. Reading custom output...')
 
@@ -169,12 +167,6 @@ def main():
         count += 1
 
     read1.close()
-    pre_barcode_filter_illumina = 0
-
-    for custom_key in custom_dict.keys():
-        if custom_key not in illumina_no_bc_list:  # custom pipeline error: custom wrote a barcode where illumina did not
-            # this record shows up in custom but not Illumina. Illumina must've filtered it out before barcoding
-            pre_barcode_filter_illumina += 1
 
     print('Finished read process and completed dictionaries. Beginning write process...')
 
@@ -183,7 +175,6 @@ def main():
         f.write('Number of records found ONLY in Illumina pipeline: ' + str(extra_records_illumina) + '\n')
         f.write('Number of records with exact matches in bar codes: ' + str(exact_matches) + '\n')
         f.write('Number of records with wrong matches in bar codes: ' + str(wrong_matches) + '\n')
-        f.write('Number of records that Illumina filtered out before barcoding: ' + str(pre_barcode_filter_illumina) + '\n')
         f.write('Number of illumina records with IDs matching fastq: ' + str(illumina_nonunique_id_count) + '\n\n')
         sorted_sam_keys = sorted(compare_dict.keys())
         for count, key in enumerate(sorted_sam_keys, 2):

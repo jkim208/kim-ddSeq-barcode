@@ -5,10 +5,6 @@ import re
 #import profile
 
 ###
-# Updates
-# Start throwing out entire Illumina records that lack any barcodes.
-
-###
 # compareSam.py reads in two aligned+merged+tagged SAM files, one from Illumina and one from a custom
 # pipeline, and locates differences in bar codes. The experiment goal is to determine where the discrepancies
 # in gene and transcript counts are coming from when comparing these two pipelines. Consistent differences
@@ -22,7 +18,6 @@ def is_read(s):
 
 def create_illumina_dictionary(illumina):
     illumina_dict = {}
-    illumina_no_bc_list = []
     for line in filter(is_read, illumina):
         elements = line.rstrip().split('\t')
 
@@ -39,11 +34,14 @@ def create_illumina_dictionary(illumina):
             s1_bc = bc_f[0][3:24].upper()
             s1_umi = umi_f[0][3:14].upper()
             illumina_dict[elements[0]] = [s1_bc, s1_umi]
-        else:  # barcode-lacking records
-            illumina_no_bc_list.append(elements[0])
+        elif elements[0]:
+            # when bar code is missing, keep record
+            illumina_dict[elements[0]] = []
+        else:  # unusual empty records (perhaps extra newlines in SAM)
+            pass
 
     illumina.close()
-    return illumina_dict, illumina_no_bc_list
+    return illumina_dict
 
 
 def create_compare_dictionary(illumina_dict, custom):
@@ -67,33 +65,54 @@ def create_compare_dictionary(illumina_dict, custom):
 
         key = elements[0]
 
-        # check if Illumina has the read id. If it does, it must have barcodes for that id
+        # check if Illumina has the read id
         if key in illumina_dict:
-            # check to see if both umi and bar code are present in custom SAM. They should be.
+            # check to see if both umi and bar code are present in custom SAM
             if bc_f and umi_f:
                 s2_bc = bc_f[0][3:24].upper()
                 s2_umi = umi_f[0][3:14].upper()
-                # We know both custom and Illumina have barcodes for this record. Keep record if bar codes mismatch
-                if illumina_dict[key][0] != s2_bc or illumina_dict[key][1] != s2_umi:
-                    # copy over matching records in illumina dictionary
+                # confirm that illumina record has bar code. Need to compare.
+                if len(illumina_dict[key]) == 2:
+                    # keep record if bar codes mismatch
+                    if illumina_dict[key][0] != s2_bc or illumina_dict[key][1] != s2_umi:
+                        # copy over matching records in illumina dictionary
+                        compare_dict[key] = illumina_dict[key]
+                        # remove illumina dictionary entry (remaining entries are of interest: never appear in custom)
+                        del illumina_dict[key]
+                        key_c = key + '-C'  # make a new key with similar name (for sorting)
+                        compare_dict[key_c] = [s2_bc, s2_umi]
+
+                        if gene_f:  # throw in gene info
+                            compare_dict[key_c].append(gene_f[0])
+                    # bar codes match up in both pipelines. Custom pipeline worked correctly. Do not keep.
+                    else:
+                        del illumina_dict[key]
+                        exact_matches += 1
+
+                else:
+                    # illumina has no bar code on this key. Custom does have a bar code. Keep record.
                     compare_dict[key] = illumina_dict[key]
                     # remove illumina dictionary entry (remaining entries are of interest: never appear in custom)
                     del illumina_dict[key]
-                    key_c = key + '-C'  # make a new key with similar name (for sorting)
+                    key_c = key + '-C'
                     compare_dict[key_c] = [s2_bc, s2_umi]
-
                     if gene_f:  # throw in gene info
                         compare_dict[key_c].append(gene_f[0])
-                # bar codes match up in both pipelines. Custom pipeline worked correctly. Do not keep.
-                else:
+
+            # custom is missing a bar code or umi
+            else:
+                # check if Illumina does have a bar code + umi. If so, a missing bar code in custom is significant
+                if len(illumina_dict[key]) == 2:
+                    compare_dict[key] = illumina_dict[key]
+                    # remove illumina dictionary entry (remaining entries are of interest: never appear in custom)
+                    del illumina_dict[key]
+                    key_c = key + '-C'
+                    compare_dict[key_c] = []
+                else:  # both records lack bar codes. Custom pipeline worked correctly. Remove record.
                     del illumina_dict[key]
                     exact_matches += 1
-            # custom is missing a bar code or umi #### THIS SHOULD NEVER HAPPEN
-            else:
-                print('Custom is missing barcodes/umi at ' + key)
 
-        # Illumina dropped this read or does not have barcodes for this read. Custom however does.
-        # Important to distinguish the type of filtering used later
+        # Illumina does not have this read.
         else:
             custom_dict[key] = elements
             # Custom has the bar codes
@@ -132,7 +151,7 @@ def main():
     custom = read_file(args.custom)
     read1 = read_file(args.read1)
 
-    illumina_dict, illumina_no_bc_list = create_illumina_dictionary(illumina)
+    illumina_dict = create_illumina_dictionary(illumina)
 
     print('Illumina file successfully closed. Reading custom output...')
 
@@ -143,25 +162,17 @@ def main():
 
     print('Custom SAM file successfully closed. Extracting read1 fastQ sequences...')
 
-    illumina_nonunique_id_count = 0
     count = 1
     for line in read1:
 
         if count == 1:
-            identifier = line[1:].split()[0]  # clean first line
+            identifier = line[1:].split()[0]
 
         elif count == 2:
             if identifier:
                 # record key(id)-value(read1 seq) pair. Skip record if ID does not exist.
-                # add read1 sequence info to dictionaries of interest
                 if identifier in compare_dict.keys():
                     compare_dict[identifier].append('Read 1: ' + line.rstrip())
-                if identifier in custom_dict.keys():
-                    custom_dict[identifier].append('Read 1: ' + line.rstrip())
-                if identifier in illumina_dict.keys():
-                    illumina_dict[identifier].append('Read 1: ' + line.rstrip())
-                    illumina_nonunique_id_count += 1
-                    # note: entries missing a read1 are oddities. The records don't show up in the fastq
 
         elif count == 4:
             count = 0  # reset counter
@@ -169,12 +180,6 @@ def main():
         count += 1
 
     read1.close()
-    pre_barcode_filter_illumina = 0
-
-    for custom_key in custom_dict.keys():
-        if custom_key not in illumina_no_bc_list:  # custom pipeline error: custom wrote a barcode where illumina did not
-            # this record shows up in custom but not Illumina. Illumina must've filtered it out before barcoding
-            pre_barcode_filter_illumina += 1
 
     print('Finished read process and completed dictionaries. Beginning write process...')
 
@@ -182,9 +187,7 @@ def main():
         f.write('Number of records found ONLY in custom pipeline: ' + str(extra_records_custom) + '\n')
         f.write('Number of records found ONLY in Illumina pipeline: ' + str(extra_records_illumina) + '\n')
         f.write('Number of records with exact matches in bar codes: ' + str(exact_matches) + '\n')
-        f.write('Number of records with wrong matches in bar codes: ' + str(wrong_matches) + '\n')
-        f.write('Number of records that Illumina filtered out before barcoding: ' + str(pre_barcode_filter_illumina) + '\n')
-        f.write('Number of illumina records with IDs matching fastq: ' + str(illumina_nonunique_id_count) + '\n\n')
+        f.write('Number of records with wrong matches in bar codes: ' + str(wrong_matches) + '\n\n')
         sorted_sam_keys = sorted(compare_dict.keys())
         for count, key in enumerate(sorted_sam_keys, 2):
             if count % 2 == 0:
@@ -194,7 +197,8 @@ def main():
         f.write("\n\nEnd of one to one comparisons\n\n")
         f.write("Illumina-unique reads------------------------------------------------\n\n")
         for key in illumina_dict:
-            f.write(key + '\t' + str(illumina_dict[key]) + '\n')
+            if len(illumina_dict[key]) > 0:  # ignore records that Illumina kept despite lacking barcode tags
+                f.write(key + '\t' + str(illumina_dict[key]) + '\n')
         f.write("\nCustom-unique reads--------------------------------------------------\n\n")
         for key in custom_dict:
             f.write(key + '\t' + str(custom_dict[key][1:]) + '\n')
