@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+import setuptools # needed to build c module in windows (may also need to install c++ build tools)
 import argparse  # command line options
 import regex  # regular expressions with edit distance functions
-import pyximport  # install Cython to access pyximport
+import pyximport  # install Cython to access pyximport. Allows faster calculation of edit_distance via C code
 pyximport.install(build_in_temp=False)
 from editDistance import edit_distance
 import sys
@@ -20,6 +21,7 @@ import distance
 # This program applies a decoding algorithm recommended by Illumina to extract, parse and filter
 # barcodes in read 1 of a paired set. The barcode information is then tagged onto the SAM file record
 # of read 2.
+# Credit for the editDistance.c script: "https://cgatoxford.wordpress.com/2016/02/01/speeding-up-python/comment-page-1/"
 
 # Decoding logic:
 # The bar code component has 6 read structures, 5 of which have distinct phase blocks. Room for mutations
